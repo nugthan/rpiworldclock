@@ -20,8 +20,8 @@ from dotenv import load_dotenv
 load_dotenv()
 WEATHER_URL = os.getenv("WEATHER_URL", "https://webfoundry.io/api/weather")
 API_KEY     = os.getenv("API_KEY", "")  # your API key loaded from .env
-FETCH_INTERVAL = 30 * 60  # seconds between weather fetches
-UPDATE_INTERVAL = 60      # seconds between display updates
+FETCH_INTERVAL  = 30 * 60  # seconds between weather+timezone fetches
+UPDATE_INTERVAL = 60       # seconds between display updates (1 minute)
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -31,28 +31,23 @@ def fetch_weather_and_timezone():
         params = {}
         if API_KEY:
             params['key'] = API_KEY  # API expects ?key={key}
-
+        # Build and log the full URL for debugging
         full_url = requests.Request('GET', WEATHER_URL, params=params).prepare().url
         logging.info("Fetching weather from URL: %s", full_url)
+
         r = requests.get(WEATHER_URL, params=params, timeout=10)
         r.raise_for_status()
         j = r.json()
         # Extract timezone field if provided
-        tz_str = j.get("timezone", None)
-        # Fallback: use default Vancouver if missing
-        if not tz_str:
-            tz_str = "America/Vancouver"
+        tz_str = j.get("timezone") or "America/Vancouver"
         # Extract weather info
         w = j["weather"]["data"]["weather"]
         desc = w.get("description", "n/a").capitalize()
         temp = w.get("temp", {}).get("cur")
-        if temp is None:
-            temp = j["weather"]["data"]["weather"]["temp"]["cur"]
         weather_text = f"{desc}, {temp:.1f}°C"
         return weather_text, tz_str
     except Exception as e:
         logging.error("Weather fetch failed: %s", e)
-        # return placeholders and keep existing timezone
         return "Weather unavailable", None
 
 def main():
@@ -101,8 +96,10 @@ def main():
         logging.info("Updated display: %s | %s | TZ=%s", now, weather_text, timezone_str)
         epd.sleep()
 
-        # Wait until next update
-        time.sleep(UPDATE_INTERVAL)
+        # Sleep until next minute boundary to sync with real time
+        now_ts = time.time()
+        sleep_secs = UPDATE_INTERVAL - (now_ts % UPDATE_INTERVAL)
+        time.sleep(sleep_secs)
         epd.init()
 
 # Entry point
