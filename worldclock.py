@@ -5,7 +5,7 @@ Stylized script to display location, current time, and weather on a Waveshare 2.
 Fetches weather, timezone, and location every 30 minutes; updates display every minute synced to real clock.
 Stores API key in a .env file.
 Ensures minute updates use partial refresh without clearing location/weather, and weather updates trigger full refresh.
-All output is rotated 180° for upside-down mounting.
+All output is correctly rotated 180° for upside-down mounting, including partial refreshes.
 """
 import sys
 import os
@@ -86,63 +86,60 @@ def main():
             logging.error("Font load failed: %s", e)
             font_loc = font_time = font_wthr = ImageFont.load_default()
 
-    # Initial data fetch and full refresh
+    # Initial data fetch and images
     location, weather_text, tz_str = fetch_data()
     timezone_str = tz_str or "America/Vancouver"
     last_fetch = time.time()
 
-    def draw_full():
-        # Create non-rotated buffer
+    # Draw full images (raw and rotated)
+    def draw_full_images():
+        # Create raw buffer (unrotated)
         raw = Image.new('1', (epd.height, epd.width), 255)
         d = ImageDraw.Draw(raw)
         # Location top
         w, h = d.textsize(location, font=font_loc)
         d.text(((epd.height-w)//2, 5), location, font=font_loc, fill=0)
         # Time center
-        now = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
-        w, h = d.textsize(now, font=font_time)
-        d.text(((epd.height-w)//2, (epd.width-h)//2 - 10), now, font=font_time, fill=0)
+        now_str = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
+        w, h = d.textsize(now_str, font=font_time)
+        d.text(((epd.height-w)//2, (epd.width-h)//2 - 10), now_str, font=font_time, fill=0)
         # Weather bottom
         w, h = d.textsize(weather_text, font=font_wthr)
         d.text(((epd.height-w)//2, epd.width-h-5), weather_text, font=font_wthr, fill=0)
-        # Rotate entire buffer for display
+        # Create rotated display image
         rotated = raw.rotate(180)
         return raw, rotated
 
-    # Get raw and rotated full images
-    raw_full, full_img = draw_full()
+    raw_full, full_img = draw_full_images()
     epd.display(epd.getbuffer(full_img))
     logging.info("Full refresh completed.")
 
-    # Setup partial base to rotated full image
+    # Setup partial base as the rotated full image
     epd.displayPartBaseImage(epd.getbuffer(full_img))
 
-    # Calculate time region on raw image, then transform coords for rotated
-    sample = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
-    d_bbox = ImageDraw.Draw(raw_full)
-    tw, th = d_bbox.textsize(sample, font=font_time)
-    # Raw coords
+    # Calculate time region on raw image
+    sample_time = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
+    d_sample = ImageDraw.Draw(raw_full)
+    tw, th = d_sample.textsize(sample_time, font=font_time)
     raw_tx = (epd.height - tw)//2
     raw_ty = (epd.width - th)//2 - 10
-    # Rotated coords: rotate rectangle by 180° around center
     time_box = (raw_tx, raw_ty, raw_tx+tw, raw_ty+th)
-    # For rotated image 180°, the time box remains same
-    tx, ty = raw_tx, raw_ty
 
-    # Main loop
+    # Main loop: partial time and full data refresh
     while True:
         # Sync to next minute
         now_ts = time.time()
         time.sleep(UPDATE_INTERVAL - (now_ts % UPDATE_INTERVAL))
 
-        # Partial update: copy rotated full image, clear time region, redraw time
-        now = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
-        time_img = full_img.copy()
-        td = ImageDraw.Draw(time_img)
-        td.rectangle(time_box, fill=255)
-        td.text((tx, ty), now, font=font_time, fill=0)
-        epd.displayPartial(epd.getbuffer(time_img))
-        logging.info("Partial time update: %s", now)
+        # Partial update: use raw_full as base, clear time region, draw new time, then rotate
+        now_str = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
+        raw_partial = raw_full.copy()
+        dp = ImageDraw.Draw(raw_partial)
+        dp.rectangle(time_box, fill=255)
+        dp.text((raw_tx, raw_ty), now_str, font=font_time, fill=0)
+        img_partial = raw_partial.rotate(180)
+        epd.displayPartial(epd.getbuffer(img_partial))
+        logging.info("Partial time update: %s", now_str)
 
         # Full refresh on interval
         if time.time() - last_fetch >= FETCH_INTERVAL:
@@ -150,7 +147,7 @@ def main():
             if tz_new:
                 timezone_str = tz_new
             last_fetch = time.time()
-            raw_full, full_img = draw_full()
+            raw_full, full_img = draw_full_images()
             epd.init()
             epd.Clear(0xFF)
             epd.display(epd.getbuffer(full_img))
