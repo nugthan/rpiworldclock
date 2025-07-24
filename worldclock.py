@@ -30,6 +30,9 @@ def fetch_weather_and_timezone():
         params = {}
         if API_KEY:
             params['key'] = API_KEY  # API expects ?key={key}
+
+        full_url = requests.Request('GET', WEATHER_URL, params=params).prepare().url
+        logging.info("Fetching weather from URL: %s", full_url)
         r = requests.get(WEATHER_URL, params=params, timeout=10)
         r.raise_for_status()
         j = r.json()
