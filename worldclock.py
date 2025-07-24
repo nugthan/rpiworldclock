@@ -1,13 +1,19 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 """
-Stylized script to display location, current time, and weather on Waveshare 2.13" e-ink (V4).
+Stylized script to display location, current time, and weather on a Waveshare 2.13" e-ink (V4).
 Fetches weather, timezone, and location every 30 minutes; updates display every minute synced to real clock.
 Stores API key in a .env file.
 Ensure SPI is enabled and `waveshare_epd`, `requests`, and `python-dotenv` are installed.
 """
 import sys
 import os
+
+# Add lib directory to sys.path for local modules/resources
+libdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib')
+if os.path.exists(libdir):
+    sys.path.append(libdir)
+
 import logging
 import time
 import requests
@@ -29,7 +35,6 @@ WEATHER_URL     = os.getenv("WEATHER_URL", "https://webfoundry.io/api/weather")
 API_KEY         = os.getenv("API_KEY", "")
 FETCH_INTERVAL  = 30 * 60  # 30 minutes
 UPDATE_INTERVAL = 60       # 1 minute
-FONT_PATH       = "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf"
 
 logging.basicConfig(level=logging.INFO)
 
