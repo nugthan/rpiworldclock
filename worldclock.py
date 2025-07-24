@@ -28,7 +28,7 @@ load_dotenv()
 
 # Determine base directory and path to local font
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
-FONT_PATH = os.path.join(BASE_DIR, 'lib', 'font', 'aktiv.otf')
+FONT_PATH = os.path.join(BASE_DIR, 'lib', 'font', 'aktiv.ttf')
 
 # Configuration
 WEATHER_URL     = os.getenv("WEATHER_URL", "https://webfoundry.io/api/weather")
@@ -79,7 +79,7 @@ def main():
         try:
             font_loc = ImageFont.truetype(FONT_PATH, 20)
             # Make time font even larger for visibility
-            font_time = ImageFont.truetype(FONT_PATH, 120)
+            font_time = ImageFont.truetype(FONT_PATH, 80)
             font_wthr = ImageFont.truetype(FONT_PATH, 18)
         except Exception as e:
             logging.error("Failed to load custom font %s: %s", FONT_PATH, e)
