@@ -50,18 +50,18 @@ def fetch_data():
         r.raise_for_status()
         j = r.json()
         # Extract location
-        loc = j.get("location", "Unknown")
+        loc = j.get("location", "Unknown").upper()
         # Extract timezone
         tz_str = j.get("timezone") or "America/Vancouver"
         # Extract weather
         w = j["weather"]["data"]["weather"]
-        desc = w.get("description", "n/a").capitalize()
+        desc = w.get("description", "N/A").upper()
         temp = w.get("temp", {}).get("cur")
-        weather_text = f"{desc}, {temp:.1f}°C"
+        weather_text = f"{desc}, {temp:.1f}°C".upper()
         return loc, weather_text, tz_str
     except Exception as e:
         logging.error("Data fetch failed: %s", e)
-        return None, "Weather unavailable", None
+        return "UNKNOWN", "WEATHER UNAVAILABLE", None
 
 
 def main():
@@ -70,16 +70,18 @@ def main():
     epd.init()
     epd.Clear(0xFF)
 
-    # Load fonts
+    # Load fonts, increase time font for prominence
     try:
-        font_loc = ImageFont.truetype(FONT_PATH, 18)
-        font_time = ImageFont.truetype(FONT_PATH, 48)
-        font_wthr = ImageFont.truetype(FONT_PATH, 16)
+        font_loc = ImageFont.truetype(FONT_PATH, 20)
+        font_time = ImageFont.truetype(FONT_PATH, 72)
+        font_wthr = ImageFont.truetype(FONT_PATH, 18)
     except Exception:
-        font_loc = font_time = font_wthr = ImageFont.load_default()
+        font_loc = ImageFont.load_default()
+        font_time = ImageFont.load_default()
+        font_wthr = ImageFont.load_default()
 
     last_fetch = 0
-    location = "Vancouver"
+    location = "VANCOUVER"
     weather_text = ""
     timezone_str = "America/Vancouver"
 
@@ -87,8 +89,7 @@ def main():
         now_ts = time.time()
         if now_ts - last_fetch >= FETCH_INTERVAL:
             loc, wtxt, tz_new = fetch_data()
-            if loc:
-                location = loc
+            location = loc or location
             if tz_new:
                 timezone_str = tz_new
             weather_text = wtxt
@@ -99,24 +100,24 @@ def main():
             tz = ZoneInfo(timezone_str)
         except Exception:
             tz = ZoneInfo("America/Vancouver")
-        now = datetime.now(tz).strftime("%H:%M")
+        now = datetime.now(tz).strftime("%H:%M").upper()
 
         # Create canvas (height x width)
         img = Image.new('1', (epd.height, epd.width), 255)
         draw = ImageDraw.Draw(img)
 
-        # Draw location at top
+        # Draw location at top (uppercase)
         w, h = draw.textsize(location, font=font_loc)
         x = (epd.height - w) // 2
         draw.text((x, 5), location, font=font_loc, fill=0)
 
-        # Draw large time in center
+        # Draw very large time in center (uppercase)
         w, h = draw.textsize(now, font=font_time)
         x = (epd.height - w) // 2
         y = (epd.width - h) // 2 - 10
         draw.text((x, y), now, font=font_time, fill=0)
 
-        # Draw weather at bottom
+        # Draw weather at bottom (uppercase)
         w, h = draw.textsize(weather_text, font=font_wthr)
         x = (epd.height - w) // 2
         draw.text((x, epd.width - h - 5), weather_text, font=font_wthr, fill=0)
