@@ -17,43 +17,41 @@ import traceback
 
 logging.basicConfig(level=logging.DEBUG)
 
-try:
-    logging.info("epd7in5_V2 Demo")
-    epd = epd7in5_V2.EPD()
+def main():
+    try:
+        # Initialize and clear the display
+        epd = epd2in13_V4.EPD()
+        epd.init()
+        epd.Clear(0xFF)
 
-    logging.info("init and Clear")
-    epd.init_fast()
-    epd.Clear()
+        # Get current Vancouver time
+        tz = ZoneInfo("America/Vancouver")
+        now = datetime.now(tz).strftime("%H:%M")
 
-    #print(f"Display Width: {epd.width}, Display height: {epd.height}")
-    # Display Width: 800, Display height: 480
-    # Create a blank image
-    Himage = Image.new('1', (epd.width, epd.height), 255) #255: white, clear the frame
-    draw = ImageDraw.Draw(Himage)
+        # Create a blank image (height x width) and drawing context
+        img = Image.new('1', (epd.height, epd.width), 255)  # 255: white background
+        draw = ImageDraw.Draw(img)
 
-#Drawing function Argyments:
-# draw.rectangle((x1, y1, x2, y2), outline=0, fill=None)
-# draw.arc((x1, y1, x2, y2),startAngle, endAngle, fill=0), (x1, y1, x2, y2) bounding box of the ellipse that the arc is part of
-# draw.chord((x1, y1, x2, y2), startAngle, endAngle, outline=0, fill=None), different to arc as it will close the shape and allow fill colour
-# draw.line((x1, y1, x2, y2), fill=0, width=1)
+        # Load a built-in font
+        font = ImageFont.load_default()
 
-    while True:
-        #Generate a random pattern
-        draw.rectangle((random.randint(10,epd.width-10), random.randint(10,epd.height-10), random.randint(10,epd.width-10), random.randint(10,epd.height-10)), outline=0)
+        # Calculate text position to center it
+        w, h = draw.textsize(now, font=font)
+        x = (epd.height - w) // 2
+        y = (epd.width - h) // 2
 
-        #Display the generated image
-        epd.display(epd.getbuffer(Himage))
+        # Draw the time string
+        draw.text((x, y), now, font=font, fill=0)  # 0: black
 
-        #Hold the frame for 2 seconds
-        time.sleep(2)
+        # Display the image buffer and sleep
+        epd.display(epd.getbuffer(img))
+        logging.info(f"Displayed Vancouver time: {now}")
+        epd.sleep()
 
-#     logging.info("Goto Sleep...")
-#     epd.sleep()
+    except Exception as e:
+        logging.error("Error updating display: %s", e)
+        sys.exit(1)
 
-except IOError as e:
-    logging.info(e)
-
-except KeyboardInterrupt:
-    logging.info("ctrl + c:")
-    epd7in5_V2.epdconfig.module_exit(cleanup=True)
-    exit()
+# Entry point
+if __name__ == "__main__":
+    main()
