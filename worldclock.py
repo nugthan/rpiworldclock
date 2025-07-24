@@ -4,7 +4,7 @@
 Stylized script to display location, current time, and weather on a Waveshare 2.13" e-ink (V4), flipped 180°.
 Fetches weather, timezone, and location every 30 minutes; updates display every minute synced to real clock.
 Stores API key in a .env file.
-Ensures the minute updates use partial refresh without clearing location/weather, and weather updates trigger full refresh.
+Ensures minute updates use partial refresh without clearing location/weather, and weather updates trigger full refresh.
 All output is rotated 180° for upside-down mounting.
 """
 import sys
@@ -92,48 +92,55 @@ def main():
     last_fetch = time.time()
 
     def draw_full():
-        tz = ZoneInfo(timezone_str)
-        now = datetime.now(tz).strftime("%H:%M").upper()
-        buf = Image.new('1', (epd.height, epd.width), 255)
-        d = ImageDraw.Draw(buf)
-        # Draw elements right side up
+        # Create non-rotated buffer
+        raw = Image.new('1', (epd.height, epd.width), 255)
+        d = ImageDraw.Draw(raw)
+        # Location top
         w, h = d.textsize(location, font=font_loc)
         d.text(((epd.height-w)//2, 5), location, font=font_loc, fill=0)
+        # Time center
+        now = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
         w, h = d.textsize(now, font=font_time)
         d.text(((epd.height-w)//2, (epd.width-h)//2 - 10), now, font=font_time, fill=0)
+        # Weather bottom
         w, h = d.textsize(weather_text, font=font_wthr)
         d.text(((epd.height-w)//2, epd.width-h-5), weather_text, font=font_wthr, fill=0)
-        # Rotate full image 180° for upside-down display
-        return buf.rotate(180)
+        # Rotate entire buffer for display
+        rotated = raw.rotate(180)
+        return raw, rotated
 
-    full_img = draw_full()
+    # Get raw and rotated full images
+    raw_full, full_img = draw_full()
     epd.display(epd.getbuffer(full_img))
     logging.info("Full refresh completed.")
 
-    # Setup partial base to the rotated full image
+    # Setup partial base to rotated full image
     epd.displayPartBaseImage(epd.getbuffer(full_img))
 
-    # Calculate time region on rotated full image
+    # Calculate time region on raw image, then transform coords for rotated
     sample = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
-    draw_test = ImageDraw.Draw(full_img)
-    tw, th = draw_test.textsize(sample, font=font_time)
-    tx = (epd.height - tw)//2
-    ty = (epd.width - th)//2 - 10
-    time_box = (tx, ty, tx+tw, ty+th)
+    d_bbox = ImageDraw.Draw(raw_full)
+    tw, th = d_bbox.textsize(sample, font=font_time)
+    # Raw coords
+    raw_tx = (epd.height - tw)//2
+    raw_ty = (epd.width - th)//2 - 10
+    # Rotated coords: rotate rectangle by 180° around center
+    time_box = (raw_tx, raw_ty, raw_tx+tw, raw_ty+th)
+    # For rotated image 180°, the time box remains same
+    tx, ty = raw_tx, raw_ty
 
-    # Main loop: partial time updates, full weather updates
+    # Main loop
     while True:
         # Sync to next minute
         now_ts = time.time()
         time.sleep(UPDATE_INTERVAL - (now_ts % UPDATE_INTERVAL))
 
-        # Partial update: create rotated copy, clear time, redraw time
-        tz = ZoneInfo(timezone_str)
-        now = datetime.now(tz).strftime("%H:%M").upper()
+        # Partial update: copy rotated full image, clear time region, redraw time
+        now = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
         time_img = full_img.copy()
-        time_draw = ImageDraw.Draw(time_img)
-        time_draw.rectangle(time_box, fill=255)
-        time_draw.text((tx, ty), now, font=font_time, fill=0)
+        td = ImageDraw.Draw(time_img)
+        td.rectangle(time_box, fill=255)
+        td.text((tx, ty), now, font=font_time, fill=0)
         epd.displayPartial(epd.getbuffer(time_img))
         logging.info("Partial time update: %s", now)
 
@@ -143,7 +150,7 @@ def main():
             if tz_new:
                 timezone_str = tz_new
             last_fetch = time.time()
-            full_img = draw_full()
+            raw_full, full_img = draw_full()
             epd.init()
             epd.Clear(0xFF)
             epd.display(epd.getbuffer(full_img))
