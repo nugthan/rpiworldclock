@@ -31,9 +31,6 @@ load_dotenv()
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 FONT_PATH = os.path.join(BASE_DIR, 'lib', 'font', 'aktiv.ttf')
 
-if not os.path.exists(FONT_PATH):
-    logging.warning("Custom font not found at %s, using default font", FONT_PATH)
-
 # Configuration
 WEATHER_URL     = os.getenv("WEATHER_URL", "")
 API_KEY         = os.getenv("API_KEY", "")
