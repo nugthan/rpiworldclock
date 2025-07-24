@@ -28,7 +28,7 @@ load_dotenv()
 
 # Determine base directory and path to local font
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
-FONT_PATH = os.path.join(BASE_DIR, 'lib', 'font', 'aktiv.otv')
+FONT_PATH = os.path.join(BASE_DIR, 'lib', 'font', 'aktiv.otf')
 
 # Configuration
 WEATHER_URL     = os.getenv("WEATHER_URL", "https://webfoundry.io/api/weather")
@@ -70,15 +70,20 @@ def main():
     epd.init()
     epd.Clear(0xFF)
 
-    # Load fonts, increase time font for prominence
-    try:
-        font_loc = ImageFont.truetype(FONT_PATH, 20)
-        font_time = ImageFont.truetype(FONT_PATH, 72)
-        font_wthr = ImageFont.truetype(FONT_PATH, 18)
-    except Exception:
-        font_loc = ImageFont.load_default()
-        font_time = ImageFont.load_default()
-        font_wthr = ImageFont.load_default()
+        # Load fonts, increase time font for prominence
+    # Check custom font availability
+    if not os.path.exists(FONT_PATH):
+        logging.error("Custom font not found at %s, falling back to default font", FONT_PATH)
+        font_loc = font_time = font_wthr = ImageFont.load_default()
+    else:
+        try:
+            font_loc = ImageFont.truetype(FONT_PATH, 20)
+            # Make time font even larger for visibility
+            font_time = ImageFont.truetype(FONT_PATH, 120)
+            font_wthr = ImageFont.truetype(FONT_PATH, 18)
+        except Exception as e:
+            logging.error("Failed to load custom font %s: %s", FONT_PATH, e)
+            font_loc = font_time = font_wthr = ImageFont.load_default()
 
     last_fetch = 0
     location = "VANCOUVER"
