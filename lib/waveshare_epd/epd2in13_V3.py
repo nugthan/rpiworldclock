@@ -1,11 +1,11 @@
 # *****************************************************************************
-# * | File        :	  epd2in13_V4.py
+# * | File        :	  epd2in13_V3.py
 # * | Author      :   Waveshare team
 # * | Function    :   Electronic paper driver
 # * | Info        :
 # *----------------
-# * | This version:   V1.0
-# * | Date        :   2023-06-25
+# * | This version:   V1.2
+# * | Date        :   2022-08-9
 # # | Info        :   python demo
 # -----------------------------------------------------------------------------
 # Permission is hereby granted, free of charge, to any person obtaining a copy
@@ -45,6 +45,50 @@ class EPD:
         self.cs_pin = epdconfig.CS_PIN
         self.width = EPD_WIDTH
         self.height = EPD_HEIGHT
+        
+    lut_partial_update= [
+        0x0,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x80,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x40,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x14,0x0,0x0,0x0,0x0,0x0,0x0,  
+        0x1,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x1,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x22,0x22,0x22,0x22,0x22,0x22,0x0,0x0,0x0,
+        0x22,0x17,0x41,0x00,0x32,0x36,
+    ]
+
+    lut_full_update = [ 
+        0x80,0x4A,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x40,0x4A,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x80,0x4A,0x40,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x40,0x4A,0x80,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0xF,0x0,0x0,0x0,0x0,0x0,0x0,
+        0xF,0x0,0x0,0xF,0x0,0x0,0x2,
+        0xF,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x1,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x0,0x0,0x0,0x0,0x0,0x0,0x0,
+        0x22,0x22,0x22,0x22,0x22,0x22,0x0,0x0,0x0,
+        0x22,0x17,0x41,0x0,0x32,0x36,
+    ]
         
     '''
     function :Hardware reset
@@ -103,17 +147,7 @@ class EPD:
     '''
     def TurnOnDisplay(self):
         self.send_command(0x22) # Display Update Control
-        self.send_data(0xf7)
-        self.send_command(0x20) # Activate Display Update Sequence
-        self.ReadBusy()
-
-    '''
-    function : Turn On Display Fast
-    parameter:
-    '''
-    def TurnOnDisplay_Fast(self):
-        self.send_command(0x22) # Display Update Control
-        self.send_data(0xC7)    # fast:0x0c, quality:0x0f, 0xcf
+        self.send_data(0xC7)
         self.send_command(0x20) # Activate Display Update Sequence
         self.ReadBusy()
     
@@ -123,11 +157,39 @@ class EPD:
     '''
     def TurnOnDisplayPart(self):
         self.send_command(0x22) # Display Update Control
-        self.send_data(0xff)    # fast:0x0c, quality:0x0f, 0xcf
+        self.send_data(0x0f)    # fast:0x0c, quality:0x0f, 0xcf
         self.send_command(0x20) # Activate Display Update Sequence
         self.ReadBusy()
-
-
+    
+    '''
+    function : Set lut
+    parameter:
+        lut : lut data
+    '''    
+    def Lut(self, lut):
+        self.send_command(0x32)
+        for i in range(0, 153):
+            self.send_data(lut[i])
+        self.ReadBusy()
+    
+    '''
+    function : Send lut data and configuration
+    parameter:
+        lut : lut data 
+    '''
+    def SetLut(self, lut):
+        self.Lut(lut)
+        self.send_command(0x3f)
+        self.send_data(lut[153])
+        self.send_command(0x03)     # gate voltage
+        self.send_data(lut[154])
+        self.send_command(0x04)     # source voltage
+        self.send_data(lut[155])    # VSH
+        self.send_data(lut[156])    # VSH2
+        self.send_data(lut[157])    # VSL
+        self.send_command(0x2c)     # VCOM
+        self.send_data(lut[158])
+    
     '''
     function : Setting the display window
     parameter:
@@ -200,45 +262,9 @@ class EPD:
         
         self.ReadBusy()
         
+        self.SetLut(self.lut_full_update)
         return 0
 
-    '''
-    function : Initialize the e-Paper fast register
-    parameter:
-    '''
-    def init_fast(self):
-        if (epdconfig.module_init() != 0):
-            return -1
-        # EPD hardware init start
-        self.reset()
-
-        self.send_command(0x12)  #SWRESET
-        self.ReadBusy() 
-
-        self.send_command(0x18) # Read built-in temperature sensor
-        self.send_command(0x80)
-
-        self.send_command(0x11) # data entry mode       
-        self.send_data(0x03)    
-
-        self.SetWindow(0, 0, self.width-1, self.height-1)
-        self.SetCursor(0, 0)
-        
-        self.send_command(0x22) # Load temperature value
-        self.send_data(0xB1)	
-        self.send_command(0x20)
-        self.ReadBusy()
-
-        self.send_command(0x1A) # Write to temperature register
-        self.send_data(0x64)
-        self.send_data(0x00)
-                        
-        self.send_command(0x22) # Load temperature value
-        self.send_data(0x91)	
-        self.send_command(0x20)
-        self.ReadBusy()
-        
-        return 0
     '''
     function : Display images
     parameter:
@@ -266,19 +292,17 @@ class EPD:
         image : Image data
     '''
     def display(self, image):
+        if self.width%8 == 0:
+            linewidth = int(self.width/8)
+        else:
+            linewidth = int(self.width/8) + 1
+
         self.send_command(0x24)
-        self.send_data2(image)  
+        for j in range(0, self.height):
+            for i in range(0, linewidth):
+                self.send_data(image[i + j * linewidth])   
         self.TurnOnDisplay()
     
-    '''
-    function : Sends the image buffer in RAM to e-Paper and fast displays
-    parameter:
-        image : Image data
-    '''
-    def display_fast(self, image):
-        self.send_command(0x24)
-        self.send_data2(image) 
-        self.TurnOnDisplay_Fast()
     '''
     function : Sends the image buffer in RAM to e-Paper and partial refresh
     parameter:
@@ -288,22 +312,35 @@ class EPD:
         epdconfig.digital_write(self.reset_pin, 0)
         epdconfig.delay_ms(1)
         epdconfig.digital_write(self.reset_pin, 1)  
+        
+        self.SetLut(self.lut_partial_update)
+        self.send_command(0x37)
+        self.send_data(0x00)
+        self.send_data(0x00)
+        self.send_data(0x00)
+        self.send_data(0x00)
+        self.send_data(0x00)
+        self.send_data(0x40)
+        self.send_data(0x00)
+        self.send_data(0x00)
+        self.send_data(0x00)  
+        self.send_data(0x00)
 
-        self.send_command(0x3C) # BorderWavefrom
+        self.send_command(0x3C) #BorderWavefrom
         self.send_data(0x80)
 
-        self.send_command(0x01) # Driver output control      
-        self.send_data(0xF9) 
-        self.send_data(0x00)
-        self.send_data(0x00)
-
-        self.send_command(0x11) # data entry mode       
-        self.send_data(0x03)
+        self.send_command(0x22) 
+        self.send_data(0xC0)
+        self.send_command(0x20)
+        self.ReadBusy()
 
         self.SetWindow(0, 0, self.width - 1, self.height - 1)
         self.SetCursor(0, 0)
         
         self.send_command(0x24) # WRITE_RAM
+        # for j in range(0, self.height):
+        #     for i in range(0, linewidth):
+        #         self.send_data(image[i + j * linewidth])   
         self.send_data2(image)  
         self.TurnOnDisplayPart()
 
