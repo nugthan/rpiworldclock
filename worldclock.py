@@ -32,7 +32,7 @@ BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 FONT_PATH = os.path.join(BASE_DIR, 'lib', 'font', 'aktiv.ttf')
 
 # Configuration
-WEATHER_URL     = os.getenv("WEATHER_URL", "https://webfoundry.io/api/weather")
+WEATHER_URL     = os.getenv("WEATHER_URL", "")
 API_KEY         = os.getenv("API_KEY", "")
 FETCH_INTERVAL  = 30 * 60  # seconds between weather+timezone+location fetches
 UPDATE_INTERVAL = 60       # seconds between minute updates
