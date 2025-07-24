@@ -1,10 +1,11 @@
 #!/usr/bin/python
 # -*- coding:utf-8 -*-
 """
-Stylized script to display location, current time, and weather on a Waveshare 2.13" e-ink (V4).
+Stylized script to display location, current time, and weather on a Waveshare 2.13" e-ink (V4), flipped 180°.
 Fetches weather, timezone, and location every 30 minutes; updates display every minute synced to real clock.
 Stores API key in a .env file.
 Ensures the minute updates use partial refresh without clearing location/weather, and weather updates trigger full refresh.
+All output is rotated 180° for upside-down mounting.
 """
 import sys
 import os
@@ -95,39 +96,40 @@ def main():
         now = datetime.now(tz).strftime("%H:%M").upper()
         buf = Image.new('1', (epd.height, epd.width), 255)
         d = ImageDraw.Draw(buf)
+        # Draw elements right side up
         w, h = d.textsize(location, font=font_loc)
         d.text(((epd.height-w)//2, 5), location, font=font_loc, fill=0)
         w, h = d.textsize(now, font=font_time)
         d.text(((epd.height-w)//2, (epd.width-h)//2 - 10), now, font=font_time, fill=0)
         w, h = d.textsize(weather_text, font=font_wthr)
         d.text(((epd.height-w)//2, epd.width-h-5), weather_text, font=font_wthr, fill=0)
-        return buf
+        # Rotate full image 180° for upside-down display
+        return buf.rotate(180)
 
     full_img = draw_full()
     epd.display(epd.getbuffer(full_img))
     logging.info("Full refresh completed.")
 
-    # Setup partial base as the full image
+    # Setup partial base to the rotated full image
     epd.displayPartBaseImage(epd.getbuffer(full_img))
 
-    # Calculate time region once
-    draw_test = ImageDraw.Draw(full_img)
+    # Calculate time region on rotated full image
     sample = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
+    draw_test = ImageDraw.Draw(full_img)
     tw, th = draw_test.textsize(sample, font=font_time)
     tx = (epd.height - tw)//2
     ty = (epd.width - th)//2 - 10
     time_box = (tx, ty, tx+tw, ty+th)
 
-    # Main loop
+    # Main loop: partial time updates, full weather updates
     while True:
-                # Sync to next minute
+        # Sync to next minute
         now_ts = time.time()
         time.sleep(UPDATE_INTERVAL - (now_ts % UPDATE_INTERVAL))
 
-        # Partial update: copy full image, clear time region, draw new time
+        # Partial update: create rotated copy, clear time, redraw time
         tz = ZoneInfo(timezone_str)
         now = datetime.now(tz).strftime("%H:%M").upper()
-        # prepare partial buffer from last full image
         time_img = full_img.copy()
         time_draw = ImageDraw.Draw(time_img)
         time_draw.rectangle(time_box, fill=255)
@@ -135,7 +137,7 @@ def main():
         epd.displayPartial(epd.getbuffer(time_img))
         logging.info("Partial time update: %s", now)
 
-                # Full refresh on interval
+        # Full refresh on interval
         if time.time() - last_fetch >= FETCH_INTERVAL:
             location, weather_text, tz_new = fetch_data()
             if tz_new:
@@ -146,9 +148,7 @@ def main():
             epd.Clear(0xFF)
             epd.display(epd.getbuffer(full_img))
             logging.info("Full refresh after fetch.")
-            # Update partial base to new full image
             epd.displayPartBaseImage(epd.getbuffer(full_img))
-            time_draw = ImageDraw.Draw(time_img)
 
 if __name__ == '__main__':
     try:
