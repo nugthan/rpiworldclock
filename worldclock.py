@@ -77,10 +77,10 @@ def main():
         font_loc = font_time = font_wthr = ImageFont.load_default()
     else:
         try:
-            font_loc = ImageFont.truetype(FONT_PATH, 20)
+            font_loc = ImageFont.truetype(FONT_PATH, 14)
             # Make time font even larger for visibility
             font_time = ImageFont.truetype(FONT_PATH, 80)
-            font_wthr = ImageFont.truetype(FONT_PATH, 18)
+            font_wthr = ImageFont.truetype(FONT_PATH, 14)
         except Exception as e:
             logging.error("Failed to load custom font %s: %s", FONT_PATH, e)
             font_loc = font_time = font_wthr = ImageFont.load_default()
