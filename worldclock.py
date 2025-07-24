@@ -36,6 +36,12 @@ API_KEY         = os.getenv("API_KEY", "")
 FETCH_INTERVAL  = 30 * 60  # seconds between weather+timezone+location fetches
 UPDATE_INTERVAL = 60       # seconds between minute updates
 
+# Development mode: if true, fetch data each minute (for testing)
+DEV_MODE = os.getenv("DEV_MODE", "false").lower() in ("true", "1", "yes")
+if DEV_MODE:
+    logging.info("DEV_MODE enabled: fetching data every minute")
+    FETCH_INTERVAL = UPDATE_INTERVAL
+
 logging.basicConfig(level=logging.INFO)
 
 # Fetch weather, timezone, and location every FETCH_INTERVAL
