@@ -141,7 +141,7 @@ def main():
             epd.display(epd.getbuffer(full_img))
             logging.info("Full refresh after fetch.")
             # Update partial base to new full image
-            epd.displayPartBaseImage(epd.getbuffer(full_img)), 255)
+            epd.displayPartBaseImage(epd.getbuffer(full_img))
             time_draw = ImageDraw.Draw(time_img)
 
 if __name__ == '__main__':
