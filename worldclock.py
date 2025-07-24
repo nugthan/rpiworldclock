@@ -101,10 +101,10 @@ def main():
     epd.display(epd.getbuffer(full_img))
     logging.info("Full refresh completed.")
 
-    # Setup partial base as the full image, so partial only changes time
+    # Setup partial base as the full image
     epd.displayPartBaseImage(epd.getbuffer(full_img))
 
-    # Calculate time region
+    # Calculate time region once
     draw_test = ImageDraw.Draw(full_img)
     sample = datetime.now(ZoneInfo(timezone_str)).strftime("%H:%M").upper()
     tw, th = draw_test.textsize(sample, font=font_time)
@@ -112,25 +112,24 @@ def main():
     ty = (epd.width - th)//2 - 10
     time_box = (tx, ty, tx+tw, ty+th)
 
-    # Prepare a blank image for partial updates
-    time_img = Image.new('1', (epd.height, epd.width), 255)
-    time_draw = ImageDraw.Draw(time_img)
-
     # Main loop
     while True:
-        # Sync to next minute
+                # Sync to next minute
         now_ts = time.time()
         time.sleep(UPDATE_INTERVAL - (now_ts % UPDATE_INTERVAL))
 
-        # Partial update: clear and redraw time
+        # Partial update: copy full image, clear time region, draw new time
         tz = ZoneInfo(timezone_str)
         now = datetime.now(tz).strftime("%H:%M").upper()
+        # prepare partial buffer from last full image
+        time_img = full_img.copy()
+        time_draw = ImageDraw.Draw(time_img)
         time_draw.rectangle(time_box, fill=255)
         time_draw.text((tx, ty), now, font=font_time, fill=0)
         epd.displayPartial(epd.getbuffer(time_img))
         logging.info("Partial time update: %s", now)
 
-        # Full refresh on interval
+                # Full refresh on interval
         if time.time() - last_fetch >= FETCH_INTERVAL:
             location, weather_text, tz_new = fetch_data()
             if tz_new:
@@ -141,9 +140,8 @@ def main():
             epd.Clear(0xFF)
             epd.display(epd.getbuffer(full_img))
             logging.info("Full refresh after fetch.")
-            epd.displayPartBaseImage(epd.getbuffer(full_img))
-            # Reset partial canvas
-            time_img = Image.new('1', (epd.height, epd.width), 255)
+            # Update partial base to new full image
+            epd.displayPartBaseImage(epd.getbuffer(full_img)), 255)
             time_draw = ImageDraw.Draw(time_img)
 
 if __name__ == '__main__':
