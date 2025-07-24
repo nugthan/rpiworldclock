@@ -10,6 +10,7 @@ if os.path.exists(libdir):
 import logging
 from waveshare_epd import epd2in13_V4
 import time
+import requests
 from datetime import datetime
 from zoneinfo import ZoneInfo
 from PIL import Image,ImageDraw,ImageFont
