@@ -5,9 +5,6 @@ import os
 picdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'pic')
 libdir = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'lib')
 
-print(f"Picture directory: {picdir}")
-print(f"Library directory: {libdir}")
-
 
 if os.path.exists(libdir):
     sys.path.append(libdir)
@@ -21,118 +18,42 @@ import traceback
 logging.basicConfig(level=logging.DEBUG)
 
 try:
-    logging.info("epd2in13_V4 Demo")
+    logging.info("epd7in5_V2 Demo")
+    epd = epd7in5_V2.EPD()
 
-    epd = epd2in13_V4.EPD()
     logging.info("init and Clear")
-    epd.init()
-    epd.Clear(0xFF)
+    epd.init_fast()
+    epd.Clear()
 
-    # Drawing on the image
-    font15 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 15)
-    font24 = ImageFont.truetype(os.path.join(picdir, 'Font.ttc'), 24)
+    #print(f"Display Width: {epd.width}, Display height: {epd.height}")
+    # Display Width: 800, Display height: 480
+    # Create a blank image
+    Himage = Image.new('1', (epd.width, epd.height), 255) #255: white, clear the frame
+    draw = ImageDraw.Draw(Himage)
 
-    if 1:
-        logging.info("E-paper refresh")
-        epd.init()
-        logging.info("1.Drawing on the image...")
-        image = Image.new('1', (epd.height, epd.width), 255)  # 255: clear the frame
-        draw = ImageDraw.Draw(image)
-        draw.rectangle([(0,0),(50,50)],outline = 0)
-        draw.rectangle([(55,0),(100,50)],fill = 0)
-        draw.line([(0,0),(50,50)], fill = 0,width = 1)
-        draw.line([(0,50),(50,0)], fill = 0,width = 1)
-        draw.chord((10, 60, 50, 100), 0, 360, fill = 0)
-        draw.ellipse((55, 60, 95, 100), outline = 0)
-        draw.pieslice((55, 60, 95, 100), 90, 180, outline = 0)
-        draw.pieslice((55, 60, 95, 100), 270, 360, fill = 0)
-        draw.polygon([(110,0),(110,50),(150,25)],outline = 0)
-        draw.polygon([(190,0),(190,50),(150,25)],fill = 0)
-        draw.text((120, 60), 'e-Paper demo', font = font15, fill = 0)
-        draw.text((110, 90), u'微雪电子', font = font24, fill = 0)
-        # image = image.rotate(180) # rotate
-        epd.display(epd.getbuffer(image))
+#Drawing function Argyments:
+# draw.rectangle((x1, y1, x2, y2), outline=0, fill=None)
+# draw.arc((x1, y1, x2, y2),startAngle, endAngle, fill=0), (x1, y1, x2, y2) bounding box of the ellipse that the arc is part of
+# draw.chord((x1, y1, x2, y2), startAngle, endAngle, outline=0, fill=None), different to arc as it will close the shape and allow fill colour
+# draw.line((x1, y1, x2, y2), fill=0, width=1)
+
+    while True:
+        #Generate a random pattern
+        draw.rectangle((random.randint(10,epd.width-10), random.randint(10,epd.height-10), random.randint(10,epd.width-10), random.randint(10,epd.height-10)), outline=0)
+
+        #Display the generated image
+        epd.display(epd.getbuffer(Himage))
+
+        #Hold the frame for 2 seconds
         time.sleep(2)
 
-        # read bmp file
-        logging.info("2.read bmp file...")
-        image = Image.open(os.path.join(picdir, '2in13.bmp'))
-        epd.display(epd.getbuffer(image))
-        time.sleep(2)
-
-        # read bmp file on window
-        logging.info("3.read bmp file on window...")
-        # epd.Clear(0xFF)
-        image1 = Image.new('1', (epd.height, epd.width), 255)  # 255: clear the frame
-        bmp = Image.open(os.path.join(picdir, '100x100.bmp'))
-        image1.paste(bmp, (2,2))
-        epd.display(epd.getbuffer(image1))
-        time.sleep(2)
-
-
-    else:
-        logging.info("E-paper refreshes quickly")
-        epd.init_fast()
-        logging.info("1.Drawing on the image...")
-        image = Image.new('1', (epd.height, epd.width), 255)  # 255: clear the frame
-        draw = ImageDraw.Draw(image)
-        draw.rectangle([(0,0),(50,50)],outline = 0)
-        draw.rectangle([(55,0),(100,50)],fill = 0)
-        draw.line([(0,0),(50,50)], fill = 0,width = 1)
-        draw.line([(0,50),(50,0)], fill = 0,width = 1)
-        draw.chord((10, 60, 50, 100), 0, 360, fill = 0)
-        draw.ellipse((55, 60, 95, 100), outline = 0)
-        draw.pieslice((55, 60, 95, 100), 90, 180, outline = 0)
-        draw.pieslice((55, 60, 95, 100), 270, 360, fill = 0)
-        draw.polygon([(110,0),(110,50),(150,25)],outline = 0)
-        draw.polygon([(190,0),(190,50),(150,25)],fill = 0)
-        draw.text((120, 60), 'e-Paper demo', font = font15, fill = 0)
-        draw.text((110, 90), u'微雪电子', font = font24, fill = 0)
-        # image = image.rotate(180) # rotate
-        epd.display_fast(epd.getbuffer(image))
-        time.sleep(2)
-
-        # read bmp file
-        logging.info("2.read bmp file...")
-        image = Image.open(os.path.join(picdir, '2in13.bmp'))
-        epd.display_fast(epd.getbuffer(image))
-        time.sleep(2)
-
-        # read bmp file on window
-        logging.info("3.read bmp file on window...")
-        # epd.Clear(0xFF)
-        image1 = Image.new('1', (epd.height, epd.width), 255)  # 255: clear the frame
-        bmp = Image.open(os.path.join(picdir, '100x100.bmp'))
-        image1.paste(bmp, (2,2))
-        epd.display_fast(epd.getbuffer(image1))
-        time.sleep(2)
-
-
-    # # partial update
-    logging.info("4.show time...")
-    time_image = Image.new('1', (epd.height, epd.width), 255)
-    time_draw = ImageDraw.Draw(time_image)
-    epd.displayPartBaseImage(epd.getbuffer(time_image))
-    num = 0
-    while (True):
-        time_draw.rectangle((120, 80, 220, 105), fill = 255)
-        time_draw.text((120, 80), time.strftime('%H:%M:%S'), font = font24, fill = 0)
-        epd.displayPartial(epd.getbuffer(time_image))
-        num = num + 1
-        if(num == 10):
-            break
-
-    logging.info("Clear...")
-    epd.init()
-    epd.Clear(0xFF)
-
-    logging.info("Goto Sleep...")
-    epd.sleep()
+#     logging.info("Goto Sleep...")
+#     epd.sleep()
 
 except IOError as e:
     logging.info(e)
 
 except KeyboardInterrupt:
     logging.info("ctrl + c:")
-    epd2in13_V4.epdconfig.module_exit(cleanup=True)
+    epd7in5_V2.epdconfig.module_exit(cleanup=True)
     exit()
