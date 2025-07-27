@@ -999,7 +999,6 @@ if __name__ == "__main__":
             pxsyslogger("? Unable to parse defaults file '{args.defaults}'")
     syslogger("Start Captive Portal")
     pd.pdmsgs = htmsgs()
-    pd.leds = LEDflash(pd)
     pd.atimer = ATimer(pd)
     pd.leds.setsequence(pd.ledseq['APoff'])
     pd.leds.start()
